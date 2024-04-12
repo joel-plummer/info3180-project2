@@ -15,7 +15,7 @@ class User(db.Model):
     joined_on = db.Column(db.DateTime, default=db.func.current_timestamp())
     
     #relationships
-    osts = db.relationship('Post', backref='user', lazy=True)
+    posts = db.relationship('Post', backref='user', lazy=True)
     likes = db.relationship('Like', backref='user', lazy=True)
     followers = db.relationship('Follow', foreign_keys='Follow.follower_id', backref='follower', lazy='dynamic')
     follows = db.relationship('Follow', foreign_keys='Follow.user_id', backref='following', lazy='dynamic')
