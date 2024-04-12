@@ -22,6 +22,7 @@ from app.models import *
 def index():
     return jsonify(message="This is the beginning of our API")
 
+"""Used for adding posts to the user's feed"""
 @app.route('/api/v1/users/<int:user_id>/posts', methods=['POST'])
 def add_post(user_id):
     if 'photo' not in request.files:
@@ -36,7 +37,6 @@ def add_post(user_id):
     if error:
         return jsonify({'error': error}), 400
 
-    # Create and save the new post
     new_post = create_post(caption, photo_path, user_id)
     return jsonify({
         'message': 'Post created successfully',
@@ -47,6 +47,24 @@ def add_post(user_id):
             'created_on': new_post.created_on.isoformat()
         }
     }), 201
+    
+"""return a user's posts"""
+@app.route('/api/v1/users/<int:user_id>/posts', methods=['GET'])
+def get_user_posts(user_id):
+    if request.method == 'GET':
+        get_current_user(user_id)
+        posts = Post.query.filter_by(user_id=user_id).order_by(Post.created_on.desc()).all()
+        posts_data = [{
+            'id': post.id,
+            'caption': post.caption,
+            'photo': post.photo,
+            'created_on': post.created_on.strftime('%Y-%m-%d %H:%M:%S')
+        } for post in posts]
+        if posts_data == []:
+            return jsonify({'message': 'No posts found'}), 404
+        return jsonify(posts_data), 200
+
+"""return all posts for all users"""
 
 
 ###
@@ -80,7 +98,11 @@ def create_post(caption, photo_path, user_id):
     db.session.commit()
     return new_post
 
-
+def get_current_user(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    return user
 
 # Here we define a function to collect form errors from Flask-WTF
 # which we can later use
