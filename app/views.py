@@ -10,7 +10,7 @@ from app import app
 from flask import render_template, request, jsonify, send_file
 import os
 from werkzeug.utils import secure_filename
-
+from sqlalchemy.orm import joinedload
 from app.models import *
 
 
@@ -65,7 +65,21 @@ def get_user_posts(user_id):
         return jsonify(posts_data), 200
 
 """return all posts for all users"""
-
+@app.route('/api/v1/posts', methods=['GET'])
+def get_all_posts():
+    try:
+        posts = Post.query.options(joinedload(Post.user)).order_by(Post.created_on.desc()).all()
+        posts_data = [{
+            'post_id': post.id,
+            'caption': post.caption,
+            'photo_url': post.photo,
+            'created_on': post.created_on.strftime('%Y-%m-%d %H:%M:%S'),
+            'user_id': post.user_id,
+            'username': post.user.username  
+        } for post in posts]
+        return jsonify(posts_data), 200
+    except Exception as e:
+        return jsonify({'error': 'Unable to fetch posts', 'message': str(e)}), 500
 
 ###
 # The functions below should be applicable to all Flask apps.
