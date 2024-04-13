@@ -29,19 +29,29 @@ def index():
 @app.route('/api/v1/register', methods=['POST'])
 def register():
     data = request.get_json()
-    required_fields = ['username', 'email', 'password', 'firstname', 'lastname']
-    if not all(field in data for field in required_fields):
-        return jsonify({'error': 'Missing data'}), 400
+    
+    possible_missing_fields = ['username', 'password', 'firstname', 'lastname', 'email', 'location', 'biography', 'profile_photo']
+    missing_fields = [f"The {field} field is missing" for field in possible_missing_fields if not data.get(field)]
 
-    if User.query.filter((User.username == data['username']) | (User.email == data['email'])).first():
-        return jsonify({'error': 'User already exists'}), 409
+    if len(missing_fields) > 0:
+        return jsonify({'errors': missing_fields}), 400
+    
+    
+    possible_duplicate_fields = ['username', 'email']
+    duplicate_fields = []
+    
+    for field in possible_duplicate_fields:
+        if User.query.filter(getattr(User, field) == data[field]).first():
+            duplicate_fields.append(f"The {field} {data[field]} already exists")
+    
+    if len(duplicate_fields) > 0:
+        return jsonify({'errors': duplicate_fields}), 409
 
-    hashed_password = generate_password_hash(data['password'])
 
     new_user = User(
         username=data['username'],
         email=data['email'],
-        password=hashed_password,
+        password=generate_password_hash(data['password']),
         firstname=data['firstname'],
         lastname=data['lastname'],
         location=data.get('location', ''),
@@ -51,23 +61,27 @@ def register():
     )
 
     db.session.add(new_user)
+
     try:
         db.session.commit()
         return jsonify({'message': 'User registered successfully'}), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'errors': [str(e)]}), 500
 
 """login user"""
 @app.route('/api/v1/auth/login', methods=['POST'])
 def login():
-
     data = request.get_json()
+    
+    possible_missing_fields = ['username', 'password']
+    missing_fields = [f"The {field} field is missing" for field in possible_missing_fields if not data.get(field)]
+
+    if len(missing_fields) > 0:
+        return jsonify({'errors': missing_fields}), 400
+    
     username = data.get('username')
     password = data.get('password')
-
-    if not username or not password:
-        return jsonify({'error': 'Please provide both username and password'}), 400
 
     user = User.query.filter_by(username=username).first()
 
