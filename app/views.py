@@ -76,7 +76,11 @@ def login():
         return jsonify({'message': 'Logged in successfully'}), 200
     else:
         return jsonify({'error': 'Invalid username or password'}), 401
-    
+
+@app.route('/api/v1/auth/logout', methods=['POST'])
+def logout():
+    logout_user()
+    return jsonify({'message': 'Logged out successfully'}), 200
     
 """Used for adding posts to the user's feed"""
 @app.route('/api/v1/users/<int:user_id>/posts', methods=['POST'])
