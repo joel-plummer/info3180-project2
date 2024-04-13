@@ -58,7 +58,7 @@ def register():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-
+"""login user"""
 @app.route('/api/v1/auth/login', methods=['POST'])
 def login():
 
@@ -145,6 +145,23 @@ def get_all_posts():
     except Exception as e:
         return jsonify({'error': 'Unable to fetch posts', 'message': str(e)}), 500
 
+"""like a post"""
+@app.route('/api/v1/posts/<int:post_id>/like', methods=['POST'])
+@login_required
+def like_post(post_id):
+    post = Post.query.get(post_id)
+    if not post:
+        return jsonify({'message': 'Post not found'}), 404
+
+    like_exists = Like.query.filter_by(user_id=current_user.id, post_id=post_id).first()
+    if like_exists:
+        return jsonify({'message': 'User already liked this post'}), 409
+
+    new_like = Like(user_id=current_user.id, post_id=post_id)
+    db.session.add(new_like)
+    db.session.commit()
+
+    return jsonify({'message': 'Post liked successfully'}), 201
 ###
 # The functions below should be applicable to all Flask apps.
 ###
