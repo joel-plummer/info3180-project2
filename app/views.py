@@ -80,6 +80,7 @@ def login():
     
 """Used for adding posts to the user's feed"""
 @app.route('/api/v1/users/<int:user_id>/posts', methods=['POST'])
+@login_required
 def add_post(user_id):
     if 'photo' not in request.files:
         return jsonify({'error': 'No photo part'}), 400
@@ -106,6 +107,7 @@ def add_post(user_id):
     
 """return a user's posts"""
 @app.route('/api/v1/users/<int:user_id>/posts', methods=['GET'])
+@login_required
 def get_user_posts(user_id):
     if request.method == 'GET':
         get_current_user(user_id)
@@ -122,6 +124,7 @@ def get_user_posts(user_id):
 
 """return all posts for all users"""
 @app.route('/api/v1/posts', methods=['GET'])
+@login_required
 def get_all_posts():
     try:
         posts = Post.query.options(joinedload(Post.user)).order_by(Post.created_on.desc()).all()
