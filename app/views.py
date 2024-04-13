@@ -10,8 +10,11 @@ from app import app
 from flask import render_template, request, jsonify, send_file
 import os
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.orm import joinedload
 from app.models import *
+from flask_login import login_user, logout_user, current_user, login_required, LoginManager
+from app import login_manager
 
 
 ###
@@ -22,8 +25,66 @@ from app.models import *
 def index():
     return jsonify(message="This is the beginning of our API")
 
+"""register user"""
+@app.route('/api/v1/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    required_fields = ['username', 'email', 'password', 'firstname', 'lastname']
+    if not all(field in data for field in required_fields):
+        return jsonify({'error': 'Missing data'}), 400
+
+    if User.query.filter((User.username == data['username']) | (User.email == data['email'])).first():
+        return jsonify({'error': 'User already exists'}), 409
+
+    hashed_password = generate_password_hash(data['password'])
+
+    new_user = User(
+        username=data['username'],
+        email=data['email'],
+        password=hashed_password,
+        firstname=data['firstname'],
+        lastname=data['lastname'],
+        location=data.get('location', ''),
+        biography=data.get('biography', ''),
+        profile_photo=data.get('profile_photo', ''),
+        joined_on=datetime.datetime.now()
+    )
+
+    db.session.add(new_user)
+    try:
+        db.session.commit()
+        return jsonify({'message': 'User registered successfully'}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/v1/auth/login', methods=['POST'])
+def login():
+
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+
+    if not username or not password:
+        return jsonify({'error': 'Please provide both username and password'}), 400
+
+    user = User.query.filter_by(username=username).first()
+
+    if user and check_password_hash(user.password, password):
+        login_user(user)
+        return jsonify({'message': 'Logged in successfully'}), 200
+    else:
+        return jsonify({'error': 'Invalid username or password'}), 401
+
+@app.route('/api/v1/auth/logout', methods=['POST'])
+def logout():
+    logout_user()
+    return jsonify({'message': 'Logged out successfully'}), 200
+    
 """Used for adding posts to the user's feed"""
 @app.route('/api/v1/users/<int:user_id>/posts', methods=['POST'])
+@login_required
 def add_post(user_id):
     if 'photo' not in request.files:
         return jsonify({'error': 'No photo part'}), 400
@@ -50,6 +111,7 @@ def add_post(user_id):
     
 """return a user's posts"""
 @app.route('/api/v1/users/<int:user_id>/posts', methods=['GET'])
+@login_required
 def get_user_posts(user_id):
     if request.method == 'GET':
         get_current_user(user_id)
@@ -66,6 +128,7 @@ def get_user_posts(user_id):
 
 """return all posts for all users"""
 @app.route('/api/v1/posts', methods=['GET'])
+@login_required
 def get_all_posts():
     try:
         posts = Post.query.options(joinedload(Post.user)).order_by(Post.created_on.desc()).all()
@@ -118,6 +181,11 @@ def get_current_user(user_id):
         return jsonify({'error': 'User not found'}), 404
     return user
 
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
 # Here we define a function to collect form errors from Flask-WTF
 # which we can later use
 def form_errors(form):
@@ -156,3 +224,4 @@ def add_header(response):
 def page_not_found(error):
     """Custom 404 page."""
     return render_template('404.html'), 404
+
