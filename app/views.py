@@ -101,6 +101,9 @@ def logout():
 @app.route('/api/v1/users/<int:user_id>/posts', methods=['POST'])
 @login_required
 def add_post(user_id):
+    if not User.query.filter(User.id == user_id).first():
+        return jsonify({"errors": ["User not found"]}) 
+    
     if 'photo' not in request.files:
         return jsonify({'error': 'No photo part'}), 400
     photo = request.files['photo']
@@ -128,6 +131,9 @@ def add_post(user_id):
 @app.route('/api/v1/users/<int:user_id>/posts', methods=['GET'])
 @login_required
 def get_user_posts(user_id):
+    if not User.query.filter(User.id == user_id).first():
+        return jsonify({"errors": ["User not found"]}) 
+    
     if request.method == 'GET':
         get_current_user(user_id)
         posts = Post.query.filter_by(user_id=user_id).order_by(Post.created_on.desc()).all()
@@ -150,14 +156,14 @@ def get_all_posts():
         posts_data = [{
             'post_id': post.id,
             'caption': post.caption,
-            'photo_url': post.photo,
+            'photo': post.photo,
             'created_on': post.created_on.strftime('%Y-%m-%d %H:%M:%S'),
             'user_id': post.user_id,
             'username': post.user.username  
         } for post in posts]
         return jsonify(posts_data), 200
     except Exception as e:
-        return jsonify({'error': 'Unable to fetch posts', 'message': str(e)}), 500
+        return jsonify({'errors': [f"Unable to fetch posts {str(e)}"]}), 500
 
 """like a post"""
 @app.route('/api/v1/posts/<int:post_id>/like', methods=['POST'])
@@ -187,12 +193,10 @@ def follow_user(user_id):
     if not target_user:
         return jsonify({'message': 'Target user not found'}), 404
 
-    # Check if the current user is already following the target user
     existing_follow = Follow.query.filter_by(follower_id=current_user.id, user_id=user_id).first()
     if existing_follow:
         return jsonify({'message': 'Already following this user'}), 409
 
-    # Create a new follow relationship
     new_follow = Follow(follower_id=current_user.id, user_id=user_id)
     db.session.add(new_follow)
     db.session.commit()
