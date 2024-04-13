@@ -20,6 +20,20 @@ class User(db.Model):
     followers = db.relationship('Follow', foreign_keys='Follow.follower_id', backref='follower', lazy='dynamic')
     follows = db.relationship('Follow', foreign_keys='Follow.user_id', backref='following', lazy='dynamic')
 
+    def is_authenticated(self):
+        return True
+    
+    def is_active(self):
+        return True
+    
+    def is_anonymous(self):
+        return False
+    
+    def get_id(self):
+        return str(self.id)
+    
+    def __repr__(self):
+        return '<User %r>' % (self.username)
 
 class Post(db.Model):
     __tablename__ = "posts"

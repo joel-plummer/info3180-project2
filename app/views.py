@@ -10,9 +10,11 @@ from app import app
 from flask import render_template, request, jsonify, send_file
 import os
 from werkzeug.utils import secure_filename
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.orm import joinedload
 from app.models import *
+from flask_login import login_user, logout_user, current_user, login_required, LoginManager
+from app import login_manager
 
 
 ###
@@ -23,7 +25,7 @@ from app.models import *
 def index():
     return jsonify(message="This is the beginning of our API")
 
-
+"""register user"""
 @app.route('/api/v1/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -56,6 +58,26 @@ def register():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+
+@app.route('/api/v1/auth/login', methods=['POST'])
+def login():
+
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+
+    if not username or not password:
+        return jsonify({'error': 'Please provide both username and password'}), 400
+
+    user = User.query.filter_by(username=username).first()
+
+    if user and check_password_hash(user.password, password):
+        login_user(user)
+        return jsonify({'message': 'Logged in successfully'}), 200
+    else:
+        return jsonify({'error': 'Invalid username or password'}), 401
+    
+    
 """Used for adding posts to the user's feed"""
 @app.route('/api/v1/users/<int:user_id>/posts', methods=['POST'])
 def add_post(user_id):
@@ -152,6 +174,11 @@ def get_current_user(user_id):
         return jsonify({'error': 'User not found'}), 404
     return user
 
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
 # Here we define a function to collect form errors from Flask-WTF
 # which we can later use
 def form_errors(form):
@@ -190,3 +217,4 @@ def add_header(response):
 def page_not_found(error):
     """Custom 404 page."""
     return render_template('404.html'), 404
+
