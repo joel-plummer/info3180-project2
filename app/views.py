@@ -162,6 +162,29 @@ def like_post(post_id):
     db.session.commit()
 
     return jsonify({'message': 'Post liked successfully'}), 201
+
+@app.route('/api/users/<int:user_id>/follow', methods=['POST'])
+@login_required
+def follow_user(user_id):
+    if current_user.id == user_id:
+        return jsonify({'message': 'You cannot follow yourself'}), 400
+
+    target_user = User.query.get(user_id)
+    if not target_user:
+        return jsonify({'message': 'Target user not found'}), 404
+
+    # Check if the current user is already following the target user
+    existing_follow = Follow.query.filter_by(follower_id=current_user.id, user_id=user_id).first()
+    if existing_follow:
+        return jsonify({'message': 'Already following this user'}), 409
+
+    # Create a new follow relationship
+    new_follow = Follow(follower_id=current_user.id, user_id=user_id)
+    db.session.add(new_follow)
+    db.session.commit()
+
+    return jsonify({'message': 'You are now following {}'.format(target_user.username)}), 201
+
 ###
 # The functions below should be applicable to all Flask apps.
 ###
