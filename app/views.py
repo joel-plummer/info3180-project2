@@ -15,59 +15,105 @@ from sqlalchemy.orm import joinedload
 from app.models import *
 from flask_login import login_user, logout_user, current_user, login_required, LoginManager
 from app import login_manager
+from app.forms import RegisterForm
+from flask_wtf.csrf import generate_csrf
 
 
 ###
 # Routing for your application.
 ###
+@app.route('/api/v1/csrf-token', methods=['GET'])
+def get_csrf():
+    return jsonify({'csrf_token': generate_csrf()})
 
 @app.route('/')
 def index():
     return jsonify(message="This is the beginning of our API")
 
 """register user"""
+
 @app.route('/api/v1/register', methods=['POST'])
 def register():
-    data = request.get_json()
-    
-    possible_missing_fields = ['username', 'password', 'firstname', 'lastname', 'email', 'location', 'biography', 'profile_photo']
-    missing_fields = [f"The {field} field is missing" for field in possible_missing_fields if not data.get(field)]
-
-    if len(missing_fields) > 0:
-        return jsonify({'errors': missing_fields}), 400
-    
-    
-    possible_duplicate_fields = ['username', 'email']
-    duplicate_fields = []
-    
-    for field in possible_duplicate_fields:
-        if User.query.filter(getattr(User, field) == data[field]).first():
-            duplicate_fields.append(f"The {field} {data[field]} already exists")
-    
-    if len(duplicate_fields) > 0:
-        return jsonify({'errors': duplicate_fields}), 409
-
-
-    new_user = User(
-        username=data['username'],
-        email=data['email'],
-        password=generate_password_hash(data['password']),
-        firstname=data['firstname'],
-        lastname=data['lastname'],
-        location=data.get('location', ''),
-        biography=data.get('biography', ''),
-        profile_photo=data.get('profile_photo', ''),
-        joined_on=datetime.datetime.now()
-    )
-
-    db.session.add(new_user)
-
-    try:
+    form=RegisterForm()
+    if request.method == 'POST' and form.validate_on_submit():
+        username = form.username.data
+        email = form.email.data
+        password = form.password.data
+        firstname = form.firstname.data
+        lastname = form.lastname.data
+        location = form.location.data
+        biography = form.biography.data
+        profile_photo = form.profile_photo.data
+        filename=secure_filename(profile_photo.filename)
+        profile_photo.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        new_user = User(
+            username=username,
+            email=email,
+            password=generate_password_hash(password),
+            firstname=firstname,
+            lastname=lastname,
+            location=location,
+            biography=biography,
+            profile_photo=filename,
+        )
+        db.session.add(new_user)
         db.session.commit()
-        return jsonify({'message': 'User registered successfully'}), 201
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'errors': [str(e)]}), 500
+        joined_on= new_user.joined_on
+        return jsonify({
+            'message': 'User registered successfully',
+            'username': username,
+            'email': email,
+            'password': password,
+            'firstname': firstname,
+            'lastname': lastname,
+            'location': location,
+            'biography': biography,
+            'profile_photo': filename,
+            'joined_on': joined_on
+        })
+    return jsonify({'errors': form_errors(form)})
+
+    # data = request.get_json()
+    
+    # possible_missing_fields = ['username', 'password', 'firstname', 'lastname', 'email', 'location', 'biography', 'profile_photo']
+    # missing_fields = [f"The {field} field is missing" for field in possible_missing_fields if not data.get(field)]
+
+    # if len(missing_fields) > 0:
+    #     return jsonify({'errors': missing_fields}), 400
+    
+    
+    # possible_duplicate_fields = ['username', 'email']
+    # duplicate_fields = []
+    
+    # for field in possible_duplicate_fields:
+    #     if User.query.filter(getattr(User, field) == data[field]).first():
+    #         duplicate_fields.append(f"The {field} {data[field]} already exists")
+    
+    # if len(duplicate_fields) > 0:
+    #     return jsonify({'errors': duplicate_fields}), 409
+
+    
+
+    # new_user = User(
+    #     username=data['username'],
+    #     email=data['email'],
+    #     password=generate_password_hash(data['password']),
+    #     firstname=data['firstname'],
+    #     lastname=data['lastname'],
+    #     location=data.get('location', ''),
+    #     biography=data.get('biography', ''),
+    #     profile_photo=data.get('profile_photo', ''),
+    #     joined_on=datetime.datetime.now()
+    # )
+
+    # db.session.add(new_user)
+
+    # try:
+    #     db.session.commit()
+    #     return jsonify({'message': 'User registered successfully'}), 201
+    # except Exception as e:
+    #     db.session.rollback()
+    #     return jsonify({'errors': [str(e)]}), 500
 
 """login user"""
 @app.route('/api/v1/auth/login', methods=['POST'])

@@ -5,10 +5,12 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from dotenv import load_dotenv
 import os
+from flask_wtf.csrf import CSRFProtect
 
 load_dotenv()
 
 app = Flask(__name__)
+csrf = CSRFProtect(app)
 app.config.from_object(Config)
 
 db = SQLAlchemy(app)
