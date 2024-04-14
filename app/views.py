@@ -15,7 +15,7 @@ from sqlalchemy.orm import joinedload
 from app.models import *
 from flask_login import login_user, logout_user, current_user, login_required, LoginManager
 from app import login_manager
-from app.forms import RegisterForm
+from app.forms import RegisterForm, LoginForm
 from flask_wtf.csrf import generate_csrf
 
 
@@ -118,17 +118,21 @@ def register():
 """login user"""
 @app.route('/api/v1/auth/login', methods=['POST'])
 def login():
-    data = request.get_json()
-    
-    possible_missing_fields = ['username', 'password']
-    missing_fields = [f"The {field} field is missing" for field in possible_missing_fields if not data.get(field)]
 
-    if len(missing_fields) > 0:
-        return jsonify({'errors': missing_fields}), 400
+    # data = request.get_json()
     
-    username = data.get('username')
-    password = data.get('password')
+    # possible_missing_fields = ['username', 'password']
+    # missing_fields = [f"The {field} field is missing" for field in possible_missing_fields if not data.get(field)]
 
+    # if len(missing_fields) > 0:
+    #     return jsonify({'errors': missing_fields}), 400
+    
+    # username = data.get('username')
+    # password = data.get('password')
+    form=LoginForm()
+    if request.method == 'POST' and form.validate_on_submit():
+        username = form.username.data
+        password = form.password.data
     user = User.query.filter_by(username=username).first()
 
     if user and check_password_hash(user.password, password):

@@ -14,3 +14,7 @@ class RegisterForm(FlaskForm):
     location = StringField('Location', validators=[InputRequired()])
     biography = TextAreaField('Biography', validators=[InputRequired()])
     profile_photo = FileField('Profile Photo', validators=[FileRequired(), FileAllowed(['jpg', 'png'], 'Images only!')])
+
+class LoginForm(FlaskForm):
+    username = StringField('Username', validators=[InputRequired()])
+    password = StringField('Password', validators=[InputRequired()])
