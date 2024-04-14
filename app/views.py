@@ -17,6 +17,7 @@ from flask_login import login_user, logout_user, current_user, login_required, L
 from app import login_manager
 from app.forms import RegisterForm, LoginForm
 from flask_wtf.csrf import generate_csrf
+import jwt
 
 
 ###
@@ -46,6 +47,18 @@ def register():
         profile_photo = form.profile_photo.data
         filename=secure_filename(profile_photo.filename)
         profile_photo.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+        possible_duplicate_fields = ['username', 'email']
+        duplicate_fields = []
+        
+        for user in User.query.all():
+            for field in possible_duplicate_fields:
+                if getattr(user, field) == locals()[field]:
+                    duplicate_fields.append(f"That {field} already exists")
+        
+        if len(duplicate_fields) > 0:
+            return jsonify({'errors': duplicate_fields})
+        
         new_user = User(
             username=username,
             email=email,
@@ -80,18 +93,6 @@ def register():
 
     # if len(missing_fields) > 0:
     #     return jsonify({'errors': missing_fields}), 400
-    
-    
-    # possible_duplicate_fields = ['username', 'email']
-    # duplicate_fields = []
-    
-    # for field in possible_duplicate_fields:
-    #     if User.query.filter(getattr(User, field) == data[field]).first():
-    #         duplicate_fields.append(f"The {field} {data[field]} already exists")
-    
-    # if len(duplicate_fields) > 0:
-    #     return jsonify({'errors': duplicate_fields}), 409
-
     
 
     # new_user = User(
@@ -133,14 +134,30 @@ def login():
     if request.method == 'POST' and form.validate_on_submit():
         username = form.username.data
         password = form.password.data
-    user = User.query.filter_by(username=username).first()
+        user = User.query.filter_by(username=username).first()
 
-    if user and check_password_hash(user.password, password):
-        login_user(user)
-        return jsonify({'message': 'Logged in successfully'}), 200
-    else:
-        return jsonify({'error': 'Invalid username or password'}), 401
+    # if user and check_password_hash(user.password, password):
+    #     login_user(user)
+    #     return jsonify({'message': 'Logged in successfully'}), 200
+    # else:
+    #     return jsonify({'error': 'Invalid username or password'}), 401
+        errors=[]
 
+        if(not user):
+            errors.append("User not found")
+            return jsonify({'errors': errors})
+        if(not(check_password_hash(user.password, password))):
+            errors.append("Invalid password")
+            return jsonify({'errors': errors})
+        data = {}
+        data['id'] = user.id
+        data['username'] = user.username
+        token = jwt.encode(data, app.config["SECRET_KEY"], algorithm="HS256")
+        return jsonify({
+            "message": "User successfully logged in",
+            "token": token
+        })
+    
 @app.route('/api/v1/auth/logout', methods=['POST'])
 @login_required
 def logout():
