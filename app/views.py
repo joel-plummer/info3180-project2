@@ -15,14 +15,16 @@ from sqlalchemy.orm import joinedload
 from app.models import *
 from flask_login import login_user, logout_user, current_user, login_required, LoginManager
 from app import login_manager
-from app.forms import RegisterForm, LoginForm
+from app.forms import RegisterForm, LoginForm, PostForm
 from flask_wtf.csrf import generate_csrf
 import jwt
+from functools import wraps
 
 
 ###
 # Routing for your application.
 ###
+
 @app.route('/api/v1/csrf-token', methods=['GET'])
 def get_csrf():
     return jsonify({'csrf_token': generate_csrf()})
@@ -157,7 +159,23 @@ def login():
             "message": "User successfully logged in",
             "token": token
         })
-    
+
+@app.route('/api/v1/users/currentuser', methods=['GET'])
+@login_required
+def get_current_user():
+    return jsonify({
+        'id': current_user.id,
+        'username': current_user.username,
+        'email': current_user.email,
+        'firstname': current_user.firstname,
+        'lastname': current_user.lastname,
+        'location': current_user.location,
+        'biography': current_user.biography,
+        'profile_photo': current_user.profile_photo,
+        'joined_on': current_user.joined_on
+    })
+
+
 @app.route('/api/v1/auth/logout', methods=['POST'])
 @login_required
 def logout():
@@ -165,34 +183,63 @@ def logout():
     return jsonify({'message': 'Logged out successfully'}), 200
     
 """Used for adding posts to the user's feed"""
-@app.route('/api/v1/users/<int:user_id>/posts', methods=['POST'])
+@app.route('/api/v1/users/<user_id>/posts', methods=['POST'])
 @login_required
 def add_post(user_id):
-    if 'photo' not in request.files:
-        return jsonify({'error': 'No photo part'}), 400
-    photo = request.files['photo']
+    form=PostForm()
+    user=User.query.filter_by(id=user_id).first()
+    errors=[]
+    if not user:
+        errors.append("User not found")
+        return jsonify({'errors': errors})
+    if request.method == 'POST' and form.validate_on_submit():
+        photo = form.photo.data
+        caption = form.caption.data
+        filename=secure_filename(photo.filename)
+        photo.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        new_post = Post(
+            caption=caption,
+            photo=filename,
+            user=user,
+            created_on=datetime.datetime.utcnow()
+        )
+        db.session.add(new_post)
+        db.session.commit()
+        return jsonify({
+            'message': 'Post created successfully',
+            'post': {
+                'id': new_post.id,
+                'caption': new_post.caption,
+                'photo': new_post.photo,
+                'created_on': new_post.created_on.isoformat()
+            }
+        })
+    return jsonify({'errors': form_errors(form)})
+    # if 'photo' not in request.files:
+    #     return jsonify({'error': 'No photo part'}), 400
+    # photo = request.files['photo']
     
-    caption = request.form.get('caption')
-    if not caption:
-        return jsonify({'error': 'No caption provided'}), 400
+    # caption = request.form.get('caption')
+    # if not caption:
+    #     return jsonify({'error': 'No caption provided'}), 400
 
-    photo_path, error = save_upload_file(photo, app.config['UPLOAD_FOLDER'])
-    if error:
-        return jsonify({'error': error}), 400
+    # photo_path, error = save_upload_file(photo, app.config['UPLOAD_FOLDER'])
+    # if error:
+    #     return jsonify({'error': error}), 400
 
-    new_post = create_post(caption, photo_path, user_id)
-    return jsonify({
-        'message': 'Post created successfully',
-        'post': {
-            'id': new_post.id,
-            'caption': new_post.caption,
-            'photo': new_post.photo,
-            'created_on': new_post.created_on.isoformat()
-        }
-    }), 201
+    # new_post = create_post(caption, photo_path, user_id)
+    # return jsonify({
+    #     'message': 'Post created successfully',
+    #     'post': {
+    #         'id': new_post.id,
+    #         'caption': new_post.caption,
+    #         'photo': new_post.photo,
+    #         'created_on': new_post.created_on.isoformat()
+    #     }
+    # }), 201
     
 """return a user's posts"""
-@app.route('/api/v1/users/<int:user_id>/posts', methods=['GET'])
+@app.route('/api/v1/users/<user_id>/posts', methods=['GET'])
 @login_required
 def get_user_posts(user_id):
     if request.method == 'GET':

@@ -1,7 +1,7 @@
 <template>
-    <div class="register">
-    <h1>Login</h1>
-    <form @submit.prevent="loginUser" id="loginForm">
+    <div class="post">
+    <h1>New Post</h1>
+    <form @submit.prevent="savePost" id="postForm">
         <div v-if="result.errors">
             <ul class="alert alert-danger">
                 <li v-for="error in result.errors">{{ error }}</li>
@@ -11,12 +11,12 @@
             <div class="alert alert-success">{{ result.message }}</div>
         </div>
         <div class="form-group">
-            <label for="username" class="form-label">Username</label>
-            <input name="username" type="text" class="form-control">
+            <label for="caption" class="form-label">caption</label>
+            <textarea row="10" name="caption" class="form-control"></textarea>
         </div>
         <div class="form-group">
-            <label for="password" class="form-label">password</label>
-            <input name="password" type="password" class="form-control">
+            <label for="photo" class="form-label">Photo</label>
+            <input type="file" name="photo" class="form-control-file">
         </div>
         <input type="submit">
     </form>
@@ -26,55 +26,65 @@
 <script setup>
 
     import {ref, onMounted} from 'vue'
+    const token = localStorage.getItem("token")
     let csrf_token = ref("")
     let result = ref([])
+    // const user = ref({})
 
     const getCsrfToken = () => {
         fetch('/api/v1/csrf-token')
         .then(res => res.json())
         .then(data => {
             csrf_token.value = data.csrf_token
-            console.log(csrf_token.value)
         })
     }
 
     onMounted(() => {
         getCsrfToken()
-        
     })
 
-    const loginUser = () => {
-        let loginForm = document.getElementById("loginForm")
-        let form_data = new FormData(loginForm);
-        console.log(...form_data.entries())
-        console.log('CSRF Token:', csrf_token.value) // Log the CSRF token
-        fetch("/api/v1/auth/login", {
-            method: "POST",
-            body: form_data,
+    const fetchUser = async() => {
+        const res = await fetch("/api/v1/users/currentuser", {
+            method: "GET",
             headers: {
-                'X-CSRFToken': csrf_token.value
+                'Authorization': "Bearer " + token
             }
         })
-        .then(res => res.json())
-        .then(data => {
-            result.value = data
-            console.log(data)
-            localStorage.setItem("token", data.token)
-            window.location.reload()
-        })
-        .catch(err => result.value = err)
+        const data = await res.json()
+        return data
     }
+
+    const savePost = async() => {
+    let user = await fetchUser()
+    let postForm = document.getElementById("postForm")
+    let form_data = new FormData(postForm)
+    
+    fetch(`/api/v1/users/${user.id}/posts`, {
+        method: "POST",
+        body: form_data,
+        headers: {
+            'X-CSRFToken': csrf_token.value,
+            'Authorization': "Bearer " + token
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        result.value = data
+        console.log(data)
+    })
+    .catch(err => result.value = err)
+}
+
 </script>
 
 <style>
-.register {
+.post {
     padding: 20px;
-    box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+    box-shadow: 2px 2px 5px rgba(0, 0,0,0.5);
 }
     form {
         display: flex;
         flex-direction: column;
-        
     }
     .form-group {
         display: flex;
