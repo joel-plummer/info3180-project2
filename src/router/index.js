@@ -44,14 +44,14 @@ const router = createRouter({
   ]
 })
 
-router.beforeEach((to, from, next) => {
-  if (to.meta.auth && !token) {
-    next("/login")
-  } else if (!to.meta.auth && token) {
-    next("/explore")
-  } else {
-    next()
-  }
-})
+// router.beforeEach((to, from, next) => {
+//   if (to.meta.auth && !token) {
+//     next("/login")
+//   } else if (!to.meta.auth && token) {
+//     next("/explore")
+//   } else {
+//     next()
+//   }
+// })
 
 export default router

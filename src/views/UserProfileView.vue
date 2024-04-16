@@ -3,23 +3,12 @@
     import { ref, onMounted } from "vue";
     import {useRoute} from 'vue-router'
     let csrf_token = ref("")
-    let user = ref({});
+    let user = ref([]);
     let posts = ref([]);
     let followers =ref(0);
     let token = localStorage.getItem("token")
-    const text = ref("follow")
     let route = useRoute()
     let id = route.params.id
-
-    onMounted(() => {
-    fetchUser(id).then(data => {
-        user.value = data
-        console.log(data)
-    })
-    fetchPosts(id).then(data => posts.value = data.posts)
-    getFollowers(id).then(data => followers.value = data)
-    getCsrfToken()
-    })
 
 
     const getCsrfToken = () => {
@@ -42,6 +31,7 @@
             }
         })
         const data = await res.json()
+        console.log("hii" + token)
         return data
     }
 
@@ -94,7 +84,15 @@
         }
 
 
-    
+    onMounted(() => {
+    fetchUser(id).then(data => {
+        user.value = data
+        console.log(data)
+    })
+    fetchPosts(id).then(data => posts.value = data.posts)
+    getFollowers(id).then(data => followers.value = data)
+    getCsrfToken()
+    })
 
 
 </script>
@@ -124,7 +122,6 @@
                     <p class="num" id="followers_num">{{ user.followers }}</p>
                     <p>Followers</p>
                 </div>
-                <a href="#" class="follow-link" v-if="id!='currentuser'" @click="() => followUser(id)">{{ text }}</a>
 
             </div>
         </div>
