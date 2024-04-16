@@ -23,10 +23,7 @@
               <RouterLink class="nav-link" to="/about">About</RouterLink>
             </li>
             <li class="nav-item">
-              <RouterLink class="nav-link" to="/register">Register</RouterLink>
-            </li>
-            <li class="nav-item">
-              <RouterLink class="nav-link" to="/login">Login</RouterLink>
+              <RouterLink class="nav-link" :to="`/users/${id}/`">My Profile</RouterLink>
             </li>
           </ul>
         </div>

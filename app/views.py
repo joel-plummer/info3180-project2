@@ -7,7 +7,7 @@ This file creates your application.
 
 import datetime
 from app import app
-from flask import render_template, request, jsonify, send_file
+from flask import render_template, request, jsonify, send_file,send_from_directory
 import os
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -160,7 +160,7 @@ def login():
             "token": token
         })
 
-@app.route('/api/v1/users/currentuser', methods=['GET'])
+@app.route('/api/v1/users/', methods=['GET'])
 @login_required
 def get_current_user():
     return jsonify({
@@ -181,7 +181,53 @@ def get_current_user():
 def logout():
     logout_user()
     return jsonify({'message': 'Logged out successfully'}), 200
-    
+
+"""Used to get current user's info"""
+@app.route("/api/v1/users/<userId>", methods=["GET"])
+def get_user(userId):
+    print(userId)
+    if (userId == "id"):
+        print("booo" + userId)
+        token = request.headers["Authorization"].split(" ")[1]
+        user = jwt.decode(token, app.config['SECRET_KEY'], algorithms="HS256")
+        userId = user['id']
+    user = User.query.filter_by(id=userId).first()
+    if (not user):
+        return jsonify({
+            "error": "user not found"
+        }), 404
+    return jsonify({
+            "id": user.id,
+            "username": user.username,
+            "password": user.password,
+            "firstname": user.firstname,
+            "lastname": user.lastname,
+            "email": user.email,
+            "location": user.location,
+            "biography": user.biography,
+            "profile_photo": "/api/v1/photo/" + user.profile_photo,
+            "joined_on": user.joined_on
+        }), 200
+
+"""To get an image"""
+@app.route("/api/v1/photo/<filename>", methods=['GET'])
+def get_image(filename):
+    return send_from_directory(os.path.join(os.getcwd(), app.config['UPLOAD_FOLDER']), filename)
+
+def form_errors(form):
+    error_messages = []
+    """Collects form errors"""
+    for field, errors in form.errors.items():
+        for error in errors:
+            message = u"Error in the %s field - %s" % (
+                    getattr(form, field).label.text,
+                    error
+                )
+            error_messages.append(message)
+
+    return error_messages
+
+
 """Used for adding posts to the user's feed"""
 @app.route('/api/v1/users/<user_id>/posts', methods=['POST'])
 @login_required
