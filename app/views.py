@@ -33,7 +33,7 @@ def get_csrf():
 def index():
     return jsonify(message="This is the beginning of our API")
 
-"""register user"""
+# ------------ register route --------------------- #
 
 @app.route('/api/v1/register', methods=['POST'])
 def register():
@@ -88,61 +88,16 @@ def register():
         })
     return jsonify({'errors': form_errors(form)})
 
-    # data = request.get_json()
-    
-    # possible_missing_fields = ['username', 'password', 'firstname', 'lastname', 'email', 'location', 'biography', 'profile_photo']
-    # missing_fields = [f"The {field} field is missing" for field in possible_missing_fields if not data.get(field)]
+# ------------ login route --------------------- #
 
-    # if len(missing_fields) > 0:
-    #     return jsonify({'errors': missing_fields}), 400
-    
-
-    # new_user = User(
-    #     username=data['username'],
-    #     email=data['email'],
-    #     password=generate_password_hash(data['password']),
-    #     firstname=data['firstname'],
-    #     lastname=data['lastname'],
-    #     location=data.get('location', ''),
-    #     biography=data.get('biography', ''),
-    #     profile_photo=data.get('profile_photo', ''),
-    #     joined_on=datetime.datetime.now()
-    # )
-
-    # db.session.add(new_user)
-
-    # try:
-    #     db.session.commit()
-    #     return jsonify({'message': 'User registered successfully'}), 201
-    # except Exception as e:
-    #     db.session.rollback()
-    #     return jsonify({'errors': [str(e)]}), 500
-
-"""login user"""
 @app.route('/api/v1/auth/login', methods=['POST'])
 def login():
-
-    # data = request.get_json()
-    
-    # possible_missing_fields = ['username', 'password']
-    # missing_fields = [f"The {field} field is missing" for field in possible_missing_fields if not data.get(field)]
-
-    # if len(missing_fields) > 0:
-    #     return jsonify({'errors': missing_fields}), 400
-    
-    # username = data.get('username')
-    # password = data.get('password')
     form=LoginForm()
     if request.method == 'POST' and form.validate_on_submit():
         username = form.username.data
         password = form.password.data
         user = User.query.filter_by(username=username).first()
 
-    # if user and check_password_hash(user.password, password):
-    #     login_user(user)
-    #     return jsonify({'message': 'Logged in successfully'}), 200
-    # else:
-    #     return jsonify({'error': 'Invalid username or password'}), 401
         errors=[]
 
         if(not user):
@@ -160,6 +115,8 @@ def login():
             "token": token
         })
 
+# ------------ get current user info --------------------- #
+
 @app.route('/api/v1/users/currentuser', methods=['GET'])
 @login_required
 def get_current_user():
@@ -175,14 +132,17 @@ def get_current_user():
         'joined_on': current_user.joined_on
     })
 
+# ------------ logout route --------------------- #
 
 @app.route('/api/v1/auth/logout', methods=['POST'])
 @login_required
 def logout():
     logout_user()
-    return jsonify({'message': 'Logged out successfully'}), 200
+    return jsonify({'message': 'Logged out successfully'})
+
     
-"""Used for adding posts to the user's feed"""
+# ------------ new post route --------------------- #
+
 @app.route('/api/v1/users/<user_id>/posts', methods=['POST'])
 @login_required
 def add_post(user_id):
@@ -215,30 +175,10 @@ def add_post(user_id):
             }
         })
     return jsonify({'errors': form_errors(form)})
-    # if 'photo' not in request.files:
-    #     return jsonify({'error': 'No photo part'}), 400
-    # photo = request.files['photo']
-    
-    # caption = request.form.get('caption')
-    # if not caption:
-    #     return jsonify({'error': 'No caption provided'}), 400
 
-    # photo_path, error = save_upload_file(photo, app.config['UPLOAD_FOLDER'])
-    # if error:
-    #     return jsonify({'error': error}), 400
-
-    # new_post = create_post(caption, photo_path, user_id)
-    # return jsonify({
-    #     'message': 'Post created successfully',
-    #     'post': {
-    #         'id': new_post.id,
-    #         'caption': new_post.caption,
-    #         'photo': new_post.photo,
-    #         'created_on': new_post.created_on.isoformat()
-    #     }
-    # }), 201
     
-"""return a user's posts"""
+# ------------ get user's posts route --------------------- #
+
 @app.route('/api/v1/users/<user_id>/posts', methods=['GET'])
 @login_required
 def get_user_posts(user_id):
@@ -254,8 +194,10 @@ def get_user_posts(user_id):
         if posts_data == []:
             return jsonify({'message': 'No posts found'}), 404
         return jsonify(posts_data), 200
+    
 
-"""return all posts for all users"""
+# ------------ return posts for all users --------------------- #
+
 @app.route('/api/v1/posts', methods=['GET'])
 @login_required
 def get_all_posts():
@@ -272,9 +214,11 @@ def get_all_posts():
         return jsonify(posts_data), 200
     except Exception as e:
         return jsonify({'error': 'Unable to fetch posts', 'message': str(e)}), 500
+    
 
-"""like a post"""
-@app.route('/api/v1/posts/<int:post_id>/like', methods=['POST'])
+# ------------ like post --------------------- #
+
+@app.route('/api/v1/posts/<post_id>/like', methods=['POST'])
 @login_required
 def like_post(post_id):
     post = Post.query.get(post_id)
@@ -291,7 +235,10 @@ def like_post(post_id):
 
     return jsonify({'message': 'Post liked successfully'}), 201
 
-@app.route('/api/users/<int:user_id>/follow', methods=['POST'])
+
+# ------------ follow user --------------------- #
+
+@app.route('/api/users/<user_id>/follow', methods=['POST'])
 @login_required
 def follow_user(user_id):
     if current_user.id == user_id:
