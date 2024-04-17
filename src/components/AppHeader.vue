@@ -29,7 +29,9 @@
               <RouterLink class="nav-link" to="/login">Login</RouterLink>
             </li>
             <li class="nav-item">
-              <RouterLink class="nav-link" :to="`/users/${id}/`">My Profile</RouterLink>
+              <RouterLink class="nav-link" :to="`/users/${userId}/`"
+                >My Profile</RouterLink
+              >
             </li>
           </ul>
         </div>
@@ -39,7 +41,15 @@
 </template>
 
 <script setup>
-import { RouterLink } from "vue-router";
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+
+let userId = localStorage.getItem("user_id");
+
+if (!userId) {
+  router.push({ name: "login" });
+}
 </script>
 
 <style>

@@ -138,29 +138,31 @@ def login():
         password = form.password.data
         user = User.query.filter_by(username=username).first()
 
-    # if user and check_password_hash(user.password, password):
-    #     login_user(user)
-    #     return jsonify({'message': 'Logged in successfully'}), 200
-    # else:
-    #     return jsonify({'error': 'Invalid username or password'}), 401
+
         errors=[]
 
         if(not user):
             errors.append("User not found")
-            return jsonify({'errors': errors})
+            return jsonify({'errors': errors}),404
         if(not(check_password_hash(user.password, password))):
             errors.append("Invalid password")
-            return jsonify({'errors': errors})
+            return jsonify({'errors': errors}),401
+        
+        login_user(user) 
+         
         data = {}
         data['id'] = user.id
         data['username'] = user.username
         token = jwt.encode(data, app.config["SECRET_KEY"], algorithm="HS256")
         return jsonify({
             "message": "User successfully logged in",
-            "token": token
+            "token": token,
+            "id": user.id,
+            
         })
 
 @app.route('/api/v1/users/', methods=['GET'])
+
 @login_required
 def get_current_user():
     return jsonify({
@@ -205,7 +207,7 @@ def get_user(userId):
             "email": user.email,
             "location": user.location,
             "biography": user.biography,
-            "profile_photo": "/api/v1/photo/" + user.profile_photo,
+            "profile_photo": "/uploads/" + user.profile_photo,
             "joined_on": user.joined_on
         }), 200
 
@@ -294,11 +296,10 @@ def get_user_posts(user_id):
         posts_data = [{
             'id': post.id,
             'caption': post.caption,
-            'photo': post.photo,
+            'photo': "/uploads/" + post.photo,
             'created_on': post.created_on.strftime('%Y-%m-%d %H:%M:%S')
         } for post in posts]
-        if posts_data == []:
-            return jsonify({'message': 'No posts found'}), 404
+      
         return jsonify(posts_data), 200
 
 """return all posts for all users"""
