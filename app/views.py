@@ -74,7 +74,6 @@ def csrf_token():
 
 @app.route('/api/v1/auth/login', methods=['POST'])
 def login():
-    # No longer checking for JSON content type; form data is expected
     username = request.form.get('username')
     password = request.form.get('password')
 
@@ -148,7 +147,7 @@ def get_user_posts(user_id):
 """return all posts for all users"""
 @app.route('/api/v1/posts', methods=['GET'])
 @auth_required
-def get_all_posts():
+def get_all_posts(user_id):
     try:
         posts = Post.query.options(joinedload(Post.user)).order_by(Post.created_on.desc()).all()
         posts_data = [{

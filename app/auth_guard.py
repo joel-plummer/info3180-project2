@@ -2,17 +2,18 @@ import jwt
 from datetime import datetime, timedelta
 from flask import jsonify
 from app.config import Config
+from app import app
 
 # Configuration
-SECRET_KEY = Config.SECRET_KEY
+SECRET_KEY = app.config['SECRET_KEY']
 ALGORITHM = 'HS256'
 TOKEN_EXPIRATION_DAYS = 1
 
 def encode_auth_token(user_id):
     try:
         payload = {
-            'exp': datetime.utcnow() + timedelta(days=TOKEN_EXPIRATION_DAYS),
-            'iat': datetime.utcnow(),
+            'exp': datetime.now() + timedelta(days=TOKEN_EXPIRATION_DAYS),
+            'iat': datetime.now(),
             'sub': user_id
         }
         return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
@@ -21,11 +22,14 @@ def encode_auth_token(user_id):
 
 def decode_auth_token(auth_token):
     try:
-        payload = jwt.decode(auth_token, SECRET_KEY, algorithms=[ALGORITHM])
+        token = auth_token.split(" ")[1] if auth_token.startswith('Bearer ') else auth_token
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        print(payload)
         return payload['sub']
     except jwt.ExpiredSignatureError:
         return 'Signature expired. Please log in again.'
-    except jwt.InvalidTokenError:
+    except jwt.InvalidTokenError as e:
+        print(e)
         return 'Invalid token. Please log in again.'
 
 def auth_required(func):
