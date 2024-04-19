@@ -16,6 +16,7 @@ from app.models import *
 from flask_login import login_user, logout_user, current_user, login_required, LoginManager
 from app import login_manager
 from app.forms import RegistrationForm
+from app.auth_guard import auth_required, encode_auth_token, decode_auth_token
 
 #csrf content
 from flask_wtf.csrf import CSRFProtect
@@ -71,25 +72,20 @@ def csrf_token():
     return jsonify({'csrf_token': generate_csrf()}), 200
 
 
-"""login user"""
 @app.route('/api/v1/auth/login', methods=['POST'])
 def login():
-    data = request.get_json()
-    
-    possible_missing_fields = ['username', 'password']
-    missing_fields = [f"The {field} field is missing" for field in possible_missing_fields if not data.get(field)]
+    # No longer checking for JSON content type; form data is expected
+    username = request.form.get('username')
+    password = request.form.get('password')
 
-    if len(missing_fields) > 0:
-        return jsonify({'errors': missing_fields}), 400
+    if not username or not password:
+        return jsonify({'errors': ['Username and password fields are required']}), 400
     
-    username = data.get('username')
-    password = data.get('password')
-
     user = User.query.filter_by(username=username).first()
 
     if user and check_password_hash(user.password, password):
-        login_user(user)
-        return jsonify({'message': 'Logged in successfully'}), 200
+        token = encode_auth_token(user.id)
+        return jsonify({'token': token}), 200
     else:
         return jsonify({'error': 'Invalid username or password'}), 401
 
