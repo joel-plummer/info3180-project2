@@ -15,6 +15,13 @@ from sqlalchemy.orm import joinedload
 from app.models import *
 from flask_login import login_user, logout_user, current_user, login_required, LoginManager
 from app import login_manager
+from app.forms import RegistrationForm
+
+#csrf content
+from flask_wtf.csrf import CSRFProtect
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'Som3$ec5etK*y')
+csrf = CSRFProtect(app)
+from flask_wtf.csrf import generate_csrf
 
 
 ###
@@ -25,49 +32,44 @@ from app import login_manager
 def index():
     return jsonify(message="This is the beginning of our API")
 
-"""register user"""
+
+"""register user with flask-wtf"""
 @app.route('/api/v1/register', methods=['POST'])
 def register():
-    data = request.get_json()
-    
-    possible_missing_fields = ['username', 'password', 'firstname', 'lastname', 'email', 'location', 'biography', 'profile_photo']
-    missing_fields = [f"The {field} field is missing" for field in possible_missing_fields if not data.get(field)]
+    form = RegistrationForm()
+    duplicate_errors = duplicate_field_check(['username', 'email'], form)
+    if duplicate_errors:
+        #return 409 if user already exists
+        return jsonify({'errors': duplicate_errors}), 409
+    photo = save_upload_file(form.profile_photo.data, app.config['UPLOAD_FOLDER'])
+    if form.validate_on_submit():
+        new_user = User(
+            username=form.username.data,
+            email=form.email.data,
+            password=generate_password_hash(form.password.data),
+            firstname=form.firstname.data,
+            lastname=form.lastname.data,
+            location=form.location.data,
+            biography=form.biography.data,
+            profile_photo=photo,
+            joined_on=datetime.datetime.now()
+        )
+        
+        db.session.add(new_user)
+        try:
+            db.session.commit()
+            return jsonify({'message': 'User registered successfully'}), 201
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'errors': [str(e)]}), 500
+    else:
+        return jsonify({'errors': form_errors(form)}), 400
 
-    if len(missing_fields) > 0:
-        return jsonify({'errors': missing_fields}), 400
-    
-    
-    possible_duplicate_fields = ['username', 'email']
-    duplicate_fields = []
-    
-    for field in possible_duplicate_fields:
-        if User.query.filter(getattr(User, field) == data[field]).first():
-            duplicate_fields.append(f"The {field} {data[field]} already exists")
-    
-    if len(duplicate_fields) > 0:
-        return jsonify({'errors': duplicate_fields}), 409
+"""get csrf token"""
+@app.route('/api/csrf_token', methods=['GET'])
+def csrf_token():
+    return jsonify({'csrf_token': generate_csrf()}), 200
 
-
-    new_user = User(
-        username=data['username'],
-        email=data['email'],
-        password=generate_password_hash(data['password']),
-        firstname=data['firstname'],
-        lastname=data['lastname'],
-        location=data.get('location', ''),
-        biography=data.get('biography', ''),
-        profile_photo=data.get('profile_photo', ''),
-        joined_on=datetime.datetime.now()
-    )
-
-    db.session.add(new_user)
-
-    try:
-        db.session.commit()
-        return jsonify({'message': 'User registered successfully'}), 201
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'errors': [str(e)]}), 500
 
 """login user"""
 @app.route('/api/v1/auth/login', methods=['POST'])
@@ -206,6 +208,13 @@ def follow_user(user_id):
 ###
 # The functions below should be applicable to all Flask apps.
 ###
+def duplicate_field_check(fields, form):
+    errors = []
+    for field in fields:
+        if User.query.filter_by(**{field: getattr(form, field).data}).first():
+            errors.append(f"{field.capitalize()} '{getattr(form, field).data}' already exists")
+    return errors
+
 def save_upload_file(file, upload_folder):
     if file.filename == '':
         return None, 'No selected photo'
