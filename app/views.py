@@ -90,14 +90,14 @@ def login():
         return jsonify({'error': 'Invalid username or password'}), 401
 
 @app.route('/api/v1/auth/logout', methods=['POST'])
-@login_required
+@auth_required
 def logout():
     logout_user()
     return jsonify({'message': 'Logged out successfully'}), 200
     
 """Used for adding posts to the user's feed"""
 @app.route('/api/v1/users/<int:user_id>/posts', methods=['POST'])
-@login_required
+@auth_required
 def add_post(user_id):
     if not User.query.filter(User.id == user_id).first():
         return jsonify({"errors": ["User not found"]}) 
@@ -127,7 +127,7 @@ def add_post(user_id):
     
 """return a user's posts"""
 @app.route('/api/v1/users/<int:user_id>/posts', methods=['GET'])
-@login_required
+@auth_required
 def get_user_posts(user_id):
     if not User.query.filter(User.id == user_id).first():
         return jsonify({"errors": ["User not found"]}) 
@@ -147,7 +147,7 @@ def get_user_posts(user_id):
 
 """return all posts for all users"""
 @app.route('/api/v1/posts', methods=['GET'])
-@login_required
+@auth_required
 def get_all_posts():
     try:
         posts = Post.query.options(joinedload(Post.user)).order_by(Post.created_on.desc()).all()
@@ -165,7 +165,7 @@ def get_all_posts():
 
 """like a post"""
 @app.route('/api/v1/posts/<int:post_id>/like', methods=['POST'])
-@login_required
+@auth_required
 def like_post(post_id):
     post = Post.query.get(post_id)
     if not post:
@@ -182,7 +182,7 @@ def like_post(post_id):
     return jsonify({'message': 'Post liked successfully'}), 201
 
 @app.route('/api/users/<int:user_id>/follow', methods=['POST'])
-@login_required
+@auth_required
 def follow_user(user_id):
     if current_user.id == user_id:
         return jsonify({'message': 'You cannot follow yourself'}), 400
@@ -246,9 +246,9 @@ def get_current_user(user_id):
     return user
 
 
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
+# @login_manager.user_loader
+# def load_user(user_id):
+#     return User.query.get(int(user_id))
 
 # Here we define a function to collect form errors from Flask-WTF
 # which we can later use
