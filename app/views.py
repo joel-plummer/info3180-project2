@@ -34,7 +34,7 @@ def index():
     return jsonify(message="This is the beginning of our API")
 
 
-"""register user with flask-wtf"""
+"""register user"""
 @app.route('/api/v1/register', methods=['POST'])
 def register():
     form = RegistrationForm()
@@ -93,7 +93,7 @@ def login():
 def logout():
     return jsonify({'message': 'Logged out func'})
     
-"""Used for adding posts to the user's feed"""
+"""adds post"""
 @app.route('/api/v1/users/<int:user_id>/posts', methods=['POST'])
 @auth_required
 def add_post(user_id):
