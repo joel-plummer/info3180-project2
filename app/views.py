@@ -7,7 +7,7 @@ This file creates your application.
 
 import datetime
 from app import app
-from flask import render_template, request, jsonify, send_file
+from flask import render_template, request, jsonify, send_file, g
 import os
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -127,27 +127,26 @@ def add_post(user_id):
 """return a user's posts"""
 @app.route('/api/v1/users/<int:user_id>/posts', methods=['GET'])
 @auth_required
-def get_user_posts(user_id):
-    if not User.query.filter(User.id == user_id).first():
-        return jsonify({"errors": ["User not found"]}) 
-    
-    if request.method == 'GET':
-        get_current_user(user_id)
-        posts = Post.query.filter_by(user_id=user_id).order_by(Post.created_on.desc()).all()
-        posts_data = [{
-            'id': post.id,
-            'caption': post.caption,
-            'photo': post.photo,
-            'created_on': post.created_on.strftime('%Y-%m-%d %H:%M:%S')
-        } for post in posts]
-        if posts_data == []:
-            return jsonify({'message': 'No posts found'}), 404
-        return jsonify(posts_data), 200
+def get_user_profile_and_posts(user_id):
+    # Fetch user profile
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"errors": ["User not found"]}), 404
+    # Fetch posts by the user
+    posts = Post.query.filter_by(user_id=user_id).order_by(Post.created_on.desc()).all()
+    posts_data = [{
+        'id': post.id,
+        'caption': post.caption,
+        'photo': post.photo,
+        'created_on': post.created_on.strftime('%Y-%m-%d %H:%M:%S')
+    } for post in posts]
+
+    return jsonify(posts_data), 200
 
 """return all posts for all users"""
 @app.route('/api/v1/posts', methods=['GET'])
 @auth_required
-def get_all_posts(user_id):
+def get_all_posts():
     try:
         posts = Post.query.options(joinedload(Post.user)).order_by(Post.created_on.desc()).all()
         posts_data = [{
@@ -162,10 +161,11 @@ def get_all_posts(user_id):
     except Exception as e:
         return jsonify({'errors': [f"Unable to fetch posts {str(e)}"]}), 500
 
-"""like a post"""
 @app.route('/api/v1/posts/<int:post_id>/like', methods=['POST'])
 @auth_required
-def like_post(post_id, user_id):
+def like_post(post_id):
+    user_id = g.user_id  # Retrieve user_id set by the auth_required decorator
+
     post = Post.query.get(post_id)
     if not post:
         return jsonify({'message': 'Post not found'}), 404
@@ -177,12 +177,13 @@ def like_post(post_id, user_id):
     new_like = Like(user_id=user_id, post_id=post_id)
     db.session.add(new_like)
     db.session.commit()
-
-    return jsonify({'message': 'Post liked successfully'}), 201
+    return jsonify({'message': 'Post liked successfully'}), 200
 
 @app.route('/api/users/<int:target_user_id>/follow', methods=['POST'])
 @auth_required
-def follow_user(user_id, target_user_id):
+def follow_user(target_user_id):
+    user_id = g.user_id  # Retrieve user_id set by the auth_required decorator
+
     if target_user_id == user_id:
         return jsonify({'message': 'You cannot follow yourself'}), 400
 

@@ -1,6 +1,7 @@
 import jwt
 from datetime import datetime, timedelta
-from flask import jsonify
+from flask import jsonify, g, request
+from functools import wraps
 from app.config import Config
 from app import app
 
@@ -34,18 +35,17 @@ def decode_auth_token(auth_token):
 
 def auth_required(func):
     """Decorator to protect routes."""
-    from functools import wraps
-    from flask import request
-    
     @wraps(func)
     def decorated_function(*args, **kwargs):
         token = request.headers.get('Authorization')
         if not token:
             return jsonify({'message': 'Token is missing.'}), 403
-        else:
-            response = decode_auth_token(token)
-            if isinstance(response, str):
-                return jsonify({'message': response}), 401
-            # Pass user_id to the route if needed
-            return func(*args, **kwargs, user_id=response)
+        
+        user_id = decode_auth_token(token)  # Assuming this returns a user_id or an error message
+        if isinstance(user_id, str):  # Assume an error message is returned as a string
+            return jsonify({'message': user_id}), 401
+        
+        g.user_id = user_id  # Store user_id in Flask's g object, accessible throughout the request
+        return func(*args, **kwargs)
+    
     return decorated_function
