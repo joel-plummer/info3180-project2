@@ -126,7 +126,7 @@ def add_post(user_id):
 """return a user's posts"""
 @app.route('/api/v1/users/<int:user_id>/posts', methods=['GET'])
 @auth_required
-def get_user_profile_and_posts(user_id):
+def get_user_posts(user_id):
     # Fetch user profile
     user = User.query.get(user_id)
     if not user:
