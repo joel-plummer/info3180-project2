@@ -180,21 +180,21 @@ def like_post(post_id, user_id):
 
     return jsonify({'message': 'Post liked successfully'}), 201
 
-@app.route('/api/users/<int:user_id>/follow', methods=['POST'])
+@app.route('/api/users/<int:target_user_id>/follow', methods=['POST'])
 @auth_required
-def follow_user(user_id):
-    if current_user.id == user_id:
+def follow_user(user_id, target_user_id):
+    if target_user_id == user_id:
         return jsonify({'message': 'You cannot follow yourself'}), 400
 
-    target_user = User.query.get(user_id)
+    target_user = User.query.get(target_user_id)
     if not target_user:
         return jsonify({'message': 'Target user not found'}), 404
 
-    existing_follow = Follow.query.filter_by(follower_id=current_user.id, user_id=user_id).first()
+    existing_follow = Follow.query.filter_by(follower_id=user_id, user_id=target_user_id).first()
     if existing_follow:
         return jsonify({'message': 'Already following this user'}), 409
 
-    new_follow = Follow(follower_id=current_user.id, user_id=user_id)
+    new_follow = Follow(follower_id=user_id, user_id=target_user_id)
     db.session.add(new_follow)
     db.session.commit()
 
