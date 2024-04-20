@@ -43,8 +43,8 @@ def auth_required(func):
         if not token:
             return jsonify({'message': 'Token is missing.'}), 403
         
-        user_id = decode_auth_token(token)  # Assuming this returns a user_id or an error message
-        if isinstance(user_id, str):  # Assume an error message is returned as a string
+        user_id = decode_auth_token(token)  
+        if isinstance(user_id, str):  
             return jsonify({'message': user_id}), 401
         
         g.user_id = user_id  # Store user_id in Flask's g object, accessible throughout the request
