@@ -165,16 +165,16 @@ def get_all_posts(user_id):
 """like a post"""
 @app.route('/api/v1/posts/<int:post_id>/like', methods=['POST'])
 @auth_required
-def like_post(post_id):
+def like_post(post_id, user_id):
     post = Post.query.get(post_id)
     if not post:
         return jsonify({'message': 'Post not found'}), 404
 
-    like_exists = Like.query.filter_by(user_id=current_user.id, post_id=post_id).first()
+    like_exists = Like.query.filter_by(user_id=user_id, post_id=post_id).first()
     if like_exists:
         return jsonify({'message': 'User already liked this post'}), 409
 
-    new_like = Like(user_id=current_user.id, post_id=post_id)
+    new_like = Like(user_id=user_id, post_id=post_id)
     db.session.add(new_like)
     db.session.commit()
 
