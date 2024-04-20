@@ -91,8 +91,7 @@ def login():
 @app.route('/api/v1/auth/logout', methods=['POST'])
 @auth_required
 def logout():
-    logout_user()
-    return jsonify({'message': 'Logged out successfully'}), 200
+    return jsonify({'message': 'Logged out func'})
     
 """Used for adding posts to the user's feed"""
 @app.route('/api/v1/users/<int:user_id>/posts', methods=['POST'])
@@ -239,16 +238,7 @@ def create_post(caption, photo_path, user_id):
     db.session.commit()
     return new_post
 
-def get_current_user(user_id):
-    user = User.query.get(user_id)
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-    return user
 
-
-# @login_manager.user_loader
-# def load_user(user_id):
-#     return User.query.get(int(user_id))
 
 # Here we define a function to collect form errors from Flask-WTF
 # which we can later use
