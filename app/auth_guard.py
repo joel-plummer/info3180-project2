@@ -10,12 +10,14 @@ SECRET_KEY = app.config['SECRET_KEY']
 ALGORITHM = 'HS256'
 TOKEN_EXPIRATION_DAYS = 1
 
-def encode_auth_token(user_id):
+def encode_auth_token(user_id, username, lastname):
     try:
         payload = {
             'exp': datetime.now() + timedelta(days=TOKEN_EXPIRATION_DAYS),
             'iat': datetime.now(),
-            'sub': user_id
+            'sub': user_id,
+            'username': username,
+            'lastname': lastname
         }
         return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
     except Exception as e:
