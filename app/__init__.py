@@ -13,6 +13,8 @@ app = Flask(__name__)
 csrf = CSRFProtect(app)
 app.config.from_object(Config)
 
+
+
 db = SQLAlchemy(app)
 migrate = Migrate(app,db)
 
