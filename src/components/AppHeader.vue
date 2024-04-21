@@ -2,7 +2,7 @@
   <header>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
       <div class="container-fluid">
-        <a class="navbar-brand" href="/">VueJS with Flask</a>
+        <a class="navbar-brand" href="/">📷 Photogram</a>
         <button
           class="navbar-toggler"
           type="button"
@@ -41,11 +41,15 @@
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router';
+import { jwtDecode } from "jwt-decode";
+import { useRouter } from "vue-router";
 
 const router = useRouter();
 
-let userId = localStorage.getItem("user_id");
+let token = localStorage.getItem("token");
+let decodedToken = jwtDecode(token);
+
+const userId = decodedToken.sub;
 
 if (!userId) {
   router.push({ name: "login" });
@@ -53,5 +57,8 @@ if (!userId) {
 </script>
 
 <style>
-/* Add any component specific styles here */
+.navbar-brand {
+  font-size: 1.5rem;
+  font-weight: bolder;
+}
 </style>

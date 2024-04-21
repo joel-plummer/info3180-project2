@@ -70,7 +70,6 @@
     .then(res => res.json())
     .then(data => {
         result.value = data
-        console.log(data)
     })
     .catch(err => result.value = err)
 }

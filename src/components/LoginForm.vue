@@ -12,13 +12,23 @@
       </div>
       <div class="form-group">
         <label for="username" class="form-label">Username</label>
-        <input name="username" type="text" class="form-control" />
+        <input
+          name="username"
+          type="text"
+          class="form-control"
+          placeholder="Enter your username"
+        />
       </div>
       <div class="form-group">
-        <label for="password" class="form-label">password</label>
-        <input name="password" type="password" class="form-control" />
+        <label for="password" class="form-label">Password</label>
+        <input
+          name="password"
+          type="password"
+          class="form-control"
+          placeholder="Enter your password"
+        />
       </div>
-      <input type="submit" />
+      <button type="submit" class="btn btn-primary">Login</button>
     </form>
   </div>
 </template>
@@ -37,7 +47,6 @@ const getCsrfToken = () => {
     .then((res) => res.json())
     .then((data) => {
       csrf_token.value = data.csrf_token;
-      console.log(csrf_token.value);
     });
 };
 
@@ -48,8 +57,6 @@ onMounted(() => {
 const loginUser = async () => {
   let loginForm = document.getElementById("loginForm");
   let form_data = new FormData(loginForm);
-  console.log(...form_data.entries());
-  console.log("CSRF Token:", csrf_token.value); // Log the CSRF token
 
   const loginResponse = await fetch("/api/v1/auth/login", {
     method: "POST",
@@ -59,14 +66,15 @@ const loginUser = async () => {
     },
   });
 
-  console.log("The Response", loginResponse);
   const data = await loginResponse.json();
 
   if (loginResponse.status === 200) {
     result.value = data;
-    console.log(data);
     localStorage.setItem("token", data.token);
-    localStorage.setItem("user_id", data.id);
+    localStorage.setItem(
+      "name",
+      JSON.stringify({ firstname: data.firstname, lastname: data.lastname })
+    );
     router.push({ name: "home" });
   } else {
     result.value = data.errors;
@@ -76,38 +84,71 @@ const loginUser = async () => {
 
 <style>
 .register {
+  max-width: 400px;
+  margin: 0 auto;
   padding: 20px;
-  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  background-color: #ffffff;
 }
+
+h1 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #333;
+}
+
 form {
   display: flex;
   flex-direction: column;
 }
+
 .form-group {
-  display: flex;
-  flex-direction: column;
-  margin: 10px 0;
+  margin-bottom: 15px;
 }
 
 .form-group > label {
   font-weight: bold;
+  margin-bottom: 5px;
+  color: #333;
 }
 
-input[type="submit"] {
-  margin-top: 20px;
-  width: 100px;
+.form-control {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.btn-primary {
+  padding: 10px;
   border: none;
-  background: rgb(76, 120, 240);
-  border-radius: 5%;
+  border-radius: 4px;
+  background-color: rgb(76, 120, 240);
   color: #fff;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
-input[type="submit"]:hover {
-  cursor: pointer;
-  background: rgb(6, 24, 104);
+.btn-primary:hover {
+  background-color: rgb(6, 24, 104);
 }
 
 .alert {
-  padding-left: 50px;
+  margin-bottom: 15px;
+  padding: 15px;
+  border-radius: 4px;
+}
+
+.alert-danger {
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
+}
+
+.alert-success {
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
 }
 </style>

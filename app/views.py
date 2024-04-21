@@ -88,7 +88,8 @@ def login():
     user = User.query.filter_by(username=username).first()
 
     if user and check_password_hash(user.password, password):
-        token = encode_auth_token(user.id, user.firstname, user.lastname)
+        token_payload = {"id" : user.id , "firstname" : user.firstname, "lastname" : user.lastname, "location" : user.location, "biography" : user.biography,"profile_photo" : user.profile_photo, "joined_on":user.joined_on.strftime('%B %Y')}
+        token = encode_auth_token(token_payload)
         return jsonify({'token': token}), 200
     else:
         return jsonify({'error': 'Invalid username or password'}), 401
@@ -205,6 +206,20 @@ def follow_user(target_user_id):
 
     return jsonify({'message': 'You are now following {}'.format(target_user.username)}), 201
 
+@app.route('/api/v1/users/<int:user_id>/followers', methods=['GET'])
+@auth_required
+def get_followers(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"errors": ["User not found"]}), 404
+
+    followers = Follow.query.filter_by(user_id=user_id).all()
+    followers_data = [{
+        'follower_id': follower.follower_id,
+    } for follower in followers]
+
+    return jsonify(followers_data), 200
+
 ###
 # The functions below should be applicable to all Flask apps.
 ###
@@ -224,7 +239,7 @@ def save_upload_file(file, upload_folder):
     filename = secure_filename(file.filename)
     filepath = os.path.join(upload_folder, filename)
     file.save(filepath)
-    return filepath, None
+    return filename, None
 
 def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}

@@ -10,14 +10,19 @@ SECRET_KEY = app.config['SECRET_KEY']
 ALGORITHM = 'HS256'
 TOKEN_EXPIRATION_DAYS = 1
 
-def encode_auth_token(user_id, username, lastname):
+def encode_auth_token(token_payload):
     try:
+      
         payload = {
             'exp': datetime.now() + timedelta(days=TOKEN_EXPIRATION_DAYS),
             'iat': datetime.now(),
-            'sub': user_id,
-            'username': username,
-            'lastname': lastname
+            'sub': token_payload["id"],
+            'firstname': token_payload["firstname"],
+            'lastname': token_payload["lastname"],
+            'location': token_payload["location"],
+            'biography': token_payload["biography"],
+            'profile_photo': token_payload["profile_photo"],
+            'joined_on': token_payload["joined_on"]
         }
         return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
     except Exception as e:
@@ -26,13 +31,11 @@ def encode_auth_token(user_id, username, lastname):
 def decode_auth_token(auth_token):
     try:
         token = auth_token.split(" ")[1] if auth_token.startswith('Bearer ') else auth_token
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        print(payload)
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]) 
         return payload['sub']
     except jwt.ExpiredSignatureError:
         return 'Signature expired. Please log in again.'
     except jwt.InvalidTokenError as e:
-        print(e)
         return 'Invalid token. Please log in again.'
 
 def auth_required(func):
