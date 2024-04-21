@@ -8,6 +8,11 @@ const userInfo = ref({});
 
 onMounted(async () => {
   const token = localStorage.getItem("token");
+
+  if (!token) {
+    router.push({ name: "login" });
+  }
+
   const decodedToken = jwtDecode(token);
   userInfo.value = decodedToken;
 
@@ -36,17 +41,27 @@ onMounted(async () => {
   getUserPosts();
   getFollowers();
 });
+
+const setDefaultImage = (event) => {
+  event.target.src = "/uploads/default-image.jpg"; 
+};
 </script>
 
 <template>
   <div class="profile-container">
     <div class="user-details-container">
       <div id="profile-photo">
-        <img :src="'/uploads/' + userInfo.profile_photo" :alt="'photo of ' + userInfo.firstname + ' ' + userInfo.lastname" />
+        <img
+          :src="'/uploads/' + userInfo.profile_photo"
+          :alt="'photo of ' + userInfo.firstname + ' ' + userInfo.lastname"
+          @error="setDefaultImage"
+        />
       </div>
 
       <div id="user-info">
-        <h2 class="name-text">{{ userInfo.firstname }} {{ userInfo.lastname }}</h2>
+        <h2 class="name-text">
+          {{ userInfo.firstname }} {{ userInfo.lastname }}
+        </h2>
 
         <p class="location-text">{{ userInfo.location }}</p>
         <small>Member since {{ userInfo.joined_on }}</small>
@@ -68,21 +83,26 @@ onMounted(async () => {
     </div>
 
     <div id="user-posts">
+      <h6 v-if="posts.length === 0" class="no-posts">This user has no posts</h6>
       <div v-for="post in posts" class="post">
-        <img :title="post.caption" width="400px" height="400px" :src="'/uploads/' + post.photo" :alt="post.caption" />
+        <img
+          :title="post.caption"
+          width="400px"
+          height="400px"
+          :src="'/uploads/' + post.photo"
+          :alt="post.caption"
+        />
       </div>
     </div>
   </div>
 </template>
 
 <style>
-
 .bio {
   margin-top: 10px;
 }
 
 .profile-container {
-
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -110,14 +130,13 @@ onMounted(async () => {
   object-fit: cover;
 }
 
-#user-info { 
+#user-info {
   width: 200%;
 }
 
 #user-info h2 {
   font-size: 24px;
   margin-bottom: 10px;
-
 }
 
 #user-info p {
@@ -131,11 +150,13 @@ onMounted(async () => {
   margin-top: 20px;
 }
 
-#posts, #followers {
+#posts,
+#followers {
   text-align: center;
 }
 
-#posts_num, #followers_num {
+#posts_num,
+#followers_num {
   font-size: 38px;
   font-weight: bold;
 }
@@ -143,8 +164,16 @@ onMounted(async () => {
 #user-posts {
   margin-top: 20px;
   display: grid;
-  grid-template-columns: repeat(3,1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
+}
+.no-posts {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  height: 100%;
+  color: grey;
 }
 
 .post {
@@ -162,13 +191,15 @@ onMounted(async () => {
   margin-top: 10px;
 }
 
-.follower-text, .post-text {
+.follower-text,
+.post-text {
   color: grey;
   font-size: 18px;
   font-weight: bolder;
 }
 
-.bio,.location-text {
+.bio,
+.location-text {
   margin-top: 10px;
 }
 
@@ -176,4 +207,3 @@ small {
   color: lightslategray;
 }
 </style>
-

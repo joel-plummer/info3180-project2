@@ -47,6 +47,11 @@ import { useRouter } from "vue-router";
 const router = useRouter();
 
 let token = localStorage.getItem("token");
+
+if (!token) {
+  router.push({ name: "login" });
+}
+
 let decodedToken = jwtDecode(token);
 
 const userId = decodedToken.sub;
