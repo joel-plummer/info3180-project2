@@ -54,23 +54,19 @@ import { jwtDecode } from "jwt-decode";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
+let token = localStorage.getItem("token");
+let userId = null;
+
 try {
-  let token = localStorage.getItem("token");
-
-  if (!token) {
+  if (token) {
+    const decodedToken = jwtDecode(token);
+    userId = decodedToken.sub;
+  } else {
     router.push({ name: "login" });
   }
-
-  let decodedToken = jwtDecode(token);
-
-  const userId = decodedToken.sub;
-
-  if (!userId) {
-    router.push({ name: "login" });
-  }
-
 } catch (error) {
-  console.error(error);
+  console.error("Invalid token:", error.message);
+  router.push({ name: "login" });
 }
 
 const logout = () => {
@@ -78,6 +74,7 @@ const logout = () => {
   router.push({ name: "login" });
 };
 </script>
+
 
 <style>
 .navbar-brand {
