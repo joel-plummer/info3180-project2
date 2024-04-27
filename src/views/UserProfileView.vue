@@ -1,7 +1,9 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { jwtDecode } from "jwt-decode";
+import { useRouter } from "vue-router";
 
+const router = useRouter();
 const posts = ref([]);
 const followers = ref([]);
 const userInfo = ref({});
@@ -11,41 +13,48 @@ onMounted(async () => {
 
   if (!token) {
     router.push({ name: "login" });
+    return; 
   }
 
-  const decodedToken = jwtDecode(token);
-  userInfo.value = decodedToken;
+  try {
+    const decodedToken = jwtDecode(token);
+    userInfo.value = decodedToken;
 
-  const getUserPosts = async () => {
-    const data = await fetch(`/api/v1/users/${decodedToken.sub}/posts`, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const getUserPosts = async () => {
+      const data = await fetch(`/api/v1/users/${decodedToken.sub}/posts`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    posts.value = await data.json();
-  };
+      posts.value = await data.json();
+    };
 
-  const getFollowers = async () => {
-    const data = await fetch(`/api/v1/users/${userInfo.sub}/followers`, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const getFollowers = async () => {
+      const data = await fetch(`/api/v1/users/${userInfo.sub}/followers`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    followers.value = await data.json();
-  };
+      followers.value = await data.json();
+    };
 
-  getUserPosts();
-  getFollowers();
+    getUserPosts();
+    getFollowers();
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    router.push({ name: "login" });
+  }
 });
 
 const setDefaultImage = (event) => {
   event.target.src = "/uploads/default-image.jpg"; 
 };
 </script>
+
 
 <template>
   <div class="profile-container">
