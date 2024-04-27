@@ -40,7 +40,7 @@
               <RouterLink class="nav-link" to="/explore">Explore</RouterLink>
             </li>
             <li>
-              <RouterLink class="nav-link" to="/logout">Logout</RouterLink>
+              <RouterLink class="nav-link" to="/logout" @click="logout">Logout</RouterLink>
             </li>
           </ul>
         </div>
@@ -68,6 +68,11 @@ const userId = decodedToken.sub;
 if (!userId) {
   router.push({ name: "login" });
 }
+
+const logout = () => {
+  localStorage.removeItem("token");
+  router.push({ name: "login" });
+};
 </script>
 
 <style>
