@@ -54,19 +54,23 @@ import { jwtDecode } from "jwt-decode";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
+try {
+  let token = localStorage.getItem("token");
 
-let token = localStorage.getItem("token");
+  if (!token) {
+    router.push({ name: "login" });
+  }
 
-if (!token) {
-  router.push({ name: "login" });
-}
+  let decodedToken = jwtDecode(token);
 
-let decodedToken = jwtDecode(token);
+  const userId = decodedToken.sub;
 
-const userId = decodedToken.sub;
+  if (!userId) {
+    router.push({ name: "login" });
+  }
 
-if (!userId) {
-  router.push({ name: "login" });
+} catch (error) {
+  console.error(error);
 }
 
 const logout = () => {
