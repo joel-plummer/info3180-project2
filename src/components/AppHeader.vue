@@ -19,15 +19,15 @@
             <li class="nav-item">
               <RouterLink to="/" class="nav-link active">Home</RouterLink>
             </li>
-            <li class="nav-item">
+            <!-- <li class="nav-item">
               <RouterLink class="nav-link" to="/about">About</RouterLink>
-            </li>
-            <li class="nav-item">
+            </li> -->
+            <!-- <li class="nav-item">
               <RouterLink class="nav-link" to="/register">Register</RouterLink>
             </li>
             <li class="nav-item">
               <RouterLink class="nav-link" to="/login">Login</RouterLink>
-            </li>
+            </li> -->
             <li class="nav-item">
               <RouterLink class="nav-link" :to="`/users/${userId}/`"
                 >My Profile</RouterLink
