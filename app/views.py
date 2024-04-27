@@ -7,7 +7,7 @@ This file creates your application.
 
 import datetime
 from app import app
-from flask import render_template, request, jsonify, send_file,send_from_directory
+from flask import g, render_template, request, jsonify, send_file,send_from_directory
 import os
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash

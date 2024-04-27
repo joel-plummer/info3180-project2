@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import UserProfileView from '../views/UserProfileView.vue'
+import ExploreView from '../views/ExploreView.vue'
 
 const token = localStorage.getItem("token")
 const router = createRouter({
@@ -32,13 +33,24 @@ const router = createRouter({
     {
       path: '/posts/new',
       name: 'new-post',
-      component: () => import('../views/NewPostView.vue')
+      component: () => import('../views/NewPostView.vue'),
+      meta: {auth: true}
     },
     {
       path: '/users/:id',
       name: "profile-view",
       component: UserProfileView,
       meta: {auth: true}
+    },
+    {
+      path: '/explore',
+      name: 'explore',
+      component: ExploreView,
+      meta: {auth: true}
+    },
+    {
+      path: '/logout',
+      name: 'logout'
     }
 
   ]

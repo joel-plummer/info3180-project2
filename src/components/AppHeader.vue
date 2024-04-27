@@ -36,6 +36,12 @@
             <li>
               <RouterLink class="nav-link" to="/posts/new">New Post</RouterLink>
             </li>
+            <li>
+              <RouterLink class="nav-link" to="/explore">Explore</RouterLink>
+            </li>
+            <li>
+              <RouterLink class="nav-link" to="/logout">Logout</RouterLink>
+            </li>
           </ul>
         </div>
       </div>
