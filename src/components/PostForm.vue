@@ -24,57 +24,63 @@
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue';
+import {jwtDecode} from 'jwt-decode';
+import { useRouter } from 'vue-router';
 
-    import {ref, onMounted} from 'vue'
-    const token = localStorage.getItem("token")
-    let csrf_token = ref("")
-    let result = ref([])
-    // const user = ref({})
+const router = useRouter();
+let csrf_token = ref("");
+let result = ref([]);
+const userId = ref(null);
 
-    const getCsrfToken = () => {
-        fetch('/api/v1/csrf-token')
-        .then(res => res.json())
-        .then(data => {
-            csrf_token.value = data.csrf_token
-        })
+const getCsrfToken = async () => {
+    try {
+        const response = await fetch('/api/v1/csrf-token');
+        const data = await response.json();
+        csrf_token.value = data.csrf_token;
+    } catch (error) {
+        console.error('Failed to fetch CSRF token', error);
     }
-
-    onMounted(() => {
-        getCsrfToken()
-    })
-
-    const fetchUser = async() => {
-        const res = await fetch("/api/v1/users/currentuser", {
-            method: "GET",
-            headers: {
-                'Authorization': "Bearer " + token
-            }
-        })
-        const data = await res.json()
-        return data
-    }
-
-    const savePost = async() => {
-    let user = await fetchUser()
-    let postForm = document.getElementById("postForm")
-    let form_data = new FormData(postForm)
-    
-    fetch(`/api/v1/users/${user.id}/posts`, {
-        method: "POST",
-        body: form_data,
-        headers: {
-            'X-CSRFToken': csrf_token.value,
-            'Authorization': "Bearer " + token
-        }
-    })
-    .then(res => res.json())
-    .then(data => {
-        result.value = data
-    })
-    .catch(err => result.value = err)
 }
 
+onMounted(async () => {
+    await getCsrfToken();
+    const token = localStorage.getItem("token");
+    if (!token) {
+        router.push({ name: "login" });
+        return; // Prevent further execution
+    }
+    try {
+        let decodedToken = jwtDecode(token);
+        userId.value = decodedToken.sub;
+    } catch (error) {
+        console.error('Failed to decode token', error);
+        router.push({ name: "login" });
+    }
+});
+
+const savePost = async () => {
+    let postForm = document.getElementById("postForm");
+    let form_data = new FormData(postForm);
+    const token = localStorage.getItem("token"); // Ensure token is retrieved here for current scope
+
+    try {
+        const response = await fetch(`/api/v1/users/${userId.value}/posts`, {
+            method: "POST",
+            body: form_data,
+            headers: {
+                'X-CSRFToken': csrf_token.value,
+                'Authorization': "Bearer " + token
+            }
+        });
+        result.value = await response.json();
+    } catch (error) {
+        console.error('Failed to save post', error);
+        result.value = error;
+    }
+}
 </script>
+
 
 <style>
 .post {

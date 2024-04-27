@@ -33,6 +33,9 @@
                 >My Profile</RouterLink
               >
             </li>
+            <li>
+              <RouterLink class="nav-link" to="/posts/new">New Post</RouterLink>
+            </li>
           </ul>
         </div>
       </div>
