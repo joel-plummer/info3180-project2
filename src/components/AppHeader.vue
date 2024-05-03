@@ -2,7 +2,7 @@
   <header>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
       <div class="container-fluid">
-        <a class="navbar-brand" href="/">VueJS with Flask</a>
+        <a class="navbar-brand" href="/">📷 Photogram</a>
         <button
           class="navbar-toggler"
           type="button"
@@ -19,8 +19,28 @@
             <li class="nav-item">
               <RouterLink to="/" class="nav-link active">Home</RouterLink>
             </li>
-            <li class="nav-item">
+            <!-- <li class="nav-item">
               <RouterLink class="nav-link" to="/about">About</RouterLink>
+            </li> -->
+            <!-- <li class="nav-item">
+              <RouterLink class="nav-link" to="/register">Register</RouterLink>
+            </li>
+            <li class="nav-item">
+              <RouterLink class="nav-link" to="/login">Login</RouterLink>
+            </li> -->
+            <li class="nav-item">
+              <RouterLink class="nav-link" :to="`/users/${userId}/`"
+                >My Profile</RouterLink
+              >
+            </li>
+            <li>
+              <RouterLink class="nav-link" to="/posts/new">New Post</RouterLink>
+            </li>
+            <li>
+              <RouterLink class="nav-link" to="/explore">Explore</RouterLink>
+            </li>
+            <li>
+              <RouterLink class="nav-link" to="/logout" @click="logout">Logout</RouterLink>
             </li>
           </ul>
         </div>
@@ -30,9 +50,35 @@
 </template>
 
 <script setup>
-import { RouterLink } from "vue-router";
+import { jwtDecode } from "jwt-decode";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
+let token = localStorage.getItem("token");
+let userId = null;
+
+try {
+  if (token) {
+    const decodedToken = jwtDecode(token);
+    userId = decodedToken.sub;
+  } else {
+    router.push({ name: "login" });
+  }
+} catch (error) {
+  console.error("Invalid token:", error.message);
+  router.push({ name: "login" });
+}
+
+const logout = () => {
+  localStorage.removeItem("token");
+  router.push({ name: "login" });
+};
 </script>
 
+
 <style>
-/* Add any component specific styles here */
+.navbar-brand {
+  font-size: 1.5rem;
+  font-weight: bolder;
+}
 </style>
